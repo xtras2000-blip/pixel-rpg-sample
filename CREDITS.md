@@ -10,3 +10,6 @@
 
 ## Phase 1 추가 아이콘
 Ninja Adventure (CC0) Items/Resource, Weapons, Potion, Scroll, Treasure, Ui/Skill Icon (Helmet, Boot, Ring, Amulet, Guard) 아이콘. 대장장이 NPC: Tiny Swords Purple Pawn Interact Hammer, Avatars_08 (Pixel Frog).
+
+## Phase 2 추가 스프라이트
+Tiny Swords (Pixel Frog): Red Archer(Run, Shoot, Arrow), Red Lancer(Run, Right_Attack), Purple Pawn(Run/Interact Knife), Purple Warrior(Run, Attack1, Guard).
