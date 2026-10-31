@@ -13,3 +13,6 @@ Ninja Adventure (CC0) Items/Resource, Weapons, Potion, Scroll, Treasure, Ui/Skil
 
 ## Phase 2 추가 스프라이트
 Tiny Swords (Pixel Frog): Red Archer(Run, Shoot, Arrow), Red Lancer(Run, Right_Attack), Purple Pawn(Run/Interact Knife), Purple Warrior(Run, Attack1, Guard).
+
+## Phase 3 추가
+Tiny Swords (Pixel Frog): Blue Pawn Knife/Pickaxe, Blue Lancer, Blue Monk Run/Heal, Avatars 02/06/07/09. CodeManu effects 1,3,4,6,11,12,13,14,17,18,20. Ninja Adventure (CC0) Spell icons, Sickle, Sai, Ninjaku, Kunai, Stick, MagicWand, Book, TeaLeaf, Grass.
