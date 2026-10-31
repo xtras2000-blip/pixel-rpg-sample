@@ -363,7 +363,7 @@ function render(){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#14101c';ctx.fill
   if(m.grd&&m.d.guard)spr(m.d.guard,Math.floor(tt*8),m.x,m.y,m.face<0,sc,.5,ay);else if(m.atkT>0)spr(m.d.sa,Math.floor((.4-m.atkT)/.4*META[m.d.sa][2]),m.x,m.y,m.face<0,sc,.5,ay);else spr(m.d.run,Math.floor(m.anim),m.x,m.y,m.face<0,sc,.5,ay);ctx.filter='none';
   const w=big?50:16,hy=Math.round(m.y-(big?50:22));ctx.fillStyle='#000';ctx.fillRect(Math.round(m.x-w/2),hy,w,3);ctx.fillStyle='#e8414f';ctx.fillRect(Math.round(m.x-w/2),hy,Math.round(w*m.hp/m.mhp),3);
   if(showName(m))label(`${m.d.n} Lv${m.lv}`,m.x,hy-3,big?'#ff8a8a':'#ddd')}})}
- L.push({y:P.y,d:()=>{if(P.inv>0&&Math.floor(tt*20)%2)return;ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(P.x,P.y,6,2.5,0,0,7);ctx.fill();const[k,f,ay]=pSpr();spr(k,f,P.x,P.y,P.face<0,1,.5,ay)}});
+ L.push({y:P.y,d:()=>{if(P.inv>0&&Math.floor(tt*20)%2)return;ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(P.x,P.y,6,2.5,0,0,7);ctx.fill();const[k,f,ay]=pSpr();drawPlayer(ctx,k,f,P.x,P.y,P.face<0,ay)}});
  L.sort((a,b)=>a.y-b.y);for(const o of L)o.d();
  drawLoot();
  for(const f of W.fx){if(f.p){ctx.fillStyle=f.c;ctx.fillRect(f.x,f.y,1,1);continue}fxDraw(f)}
@@ -409,7 +409,7 @@ Object.assign(ITEMS,{
  wneck:{n:'나무 목걸이',ic:'i_amulet',slot:'neck',g:1,hp:10,req:3,price:60},rneck:{n:'바위 목걸이',ic:'i_amulet',slot:'neck',g:2,def:2,hp:10,req:8,price:150},bneck:{n:'흑철 목걸이',ic:'i_amulet',slot:'neck',g:3,atk:3,hp:20,req:12,price:350}});
 for(const k in ITEMS){const it=ITEMS[k];if(it.g==null)it.g=0;if(!it.t)it.t=it.slot?'eq':'mat'}
 // required proficiency: weapon -> its category, armor pieces -> 갑옷, accessories -> 캐릭터 Lv
-const reqOf=it=>it.slot==='weapon'?[PROF[it.cat],Math.max(1,(S.prof[it.cat]||{lv:0}).lv)]:['ring','neck'].includes(it.slot)?['캐릭터',charLv()]:['갑옷',S.prof.armor.lv];
+const reqOf=it=>it.slot==='weapon'?[PROF[it.cat],Math.max(1,(S.prof[it.cat]||{lv:0}).lv)]:['ring','neck'].includes(it.slot)?['캐릭터',charLv()]:it.at?[PROF[it.at],Math.max(1,PL(it.at))]:['갑옷 숙련(최고)',Math.max(1,PL('cloth'),PL('leather'),PL('plate'))];
 // pure percentage drop tables, no pity, no boxes. [item, chance, min, max]
 const DROPS={
  bandit:[['feather',.35],['cloth_s',.4],['leather_s',.25],['potion',.04],['copper',.08],['fhelm',.02],['farm',.02],['fglv',.02],['fboot',.02],['gem_g',.01]],
@@ -954,13 +954,14 @@ function charWin(){const pr=c=>{const p=S.prof[c],g=grade(p.lv),on=catActive(c);
  <div class="cols"><div><b>숙련도</b> <span style="font-size:9px;color:#9fe08a">● 지금 능력치 적용 중</span>${grp('무기')}${grp('방어')}${grp('생활')}</div>
  <div><b>장비</b><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:3px 0">${SLOTS.map(([s,n])=>{const k=S.eq[s];return`<div style="text-align:center;font-size:9px">${k?cell(k,1).replace('data-i=','data-q=').replace('width:40px','width:40px;margin:auto'):`<div style="width:40px;height:40px;margin:auto;border:2px dashed #555;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#666">${n}</div>`}<div style="color:${k?gcol(k):'#777'};white-space:nowrap;overflow:hidden">${k?ITEMS[k].n+(upLv(k)?' +'+upLv(k):''):n}</div></div>`}).join('')}</div>
  ${awkLine()}<div style="color:#aaa;font-size:9px">장비를 누르면 상세 · 가방에서 장착</div></div></div>`);const b=$('b_stw');if(b)b.onclick=statWin;$('wb').scrollTop=0}
-function statWin(){const s=stats(),src=statSrc();const row=(n,v)=>`<div style="display:flex;justify-content:space-between;padding:1px 4px;border-bottom:1px solid #ffffff14"><span style="color:#ccc">${n}</span><b>${v}</b></div>`;
+function statHTML(){const s=stats(),src=statSrc();const row=(n,v)=>`<div style="display:flex;justify-content:space-between;padding:1px 4px;border-bottom:1px solid #ffffff14"><span style="color:#ccc">${n}</span><b>${v}</b></div>`;
  const fin=[['공격력',atkPow().toFixed(1)],['치명타',Math.round(critCh()*100)+'%'],['공격 간격',atkCd().toFixed(2)+'초'],['최대 HP',maxHp()],['최대 MP',Math.round(maxMp())],['방어',totDef()],['받는 피해',Math.round(dmgTakenMul()*100)+'%'],['이동 속도',Math.round(spdMul()*100)+'%'],['스킬 피해',Math.round(skillMul()*100)+'%'],['MP 회복',Math.round(mpRegen()*100)+'%'],['물약 회복',Math.round(potMul()*100)+'%'],['흡혈',(s.ls||0)+'%'],['기절 확률',(s.stun||0)+'%'],['추가 사거리',(s.range||0).toFixed(1)]];
  const life=['yw','yhw','yl','yh','yo','ygem'].filter(k=>s[k]).map(k=>STN[k][0]+' '+Math.round(s[k])+'%').join(' · ');
  const TC={기본:'#aaa',숙련:'#9fe08a',장비:'#7fd3ff',세트:'#ffd24a',패시브:'#f6d68a',각성:'#ff9be0',버프:'#ff7b7b'};
  const lines=src.map(r=>{const t=Object.assign({},r.s);let ex='';if(t.base){ex=`무기 공격력 ${t.base} · `;delete t.base}return`<div class="row" style="padding:2px 4px;${r.on?'':'opacity:.4'}">${tagS(r.t,TC[r.t])}<div class="f" style="font-size:9px"><b>${r.n}</b>${r.on?'':` <span style="color:#ff9b9b">미적용 (${r.why})</span>`}<div style="color:#ccc">${ex}${fmtS(t)||'-'}</div></div></div>`}).join('');
- win('스탯',`<div class="cols"><div><b>최종 능력치</b>${fin.map(x=>row(x[0],x[1])).join('')}${life?`<div style="color:#9fe08a;font-size:9px;margin-top:3px">생활: ${life}</div>`:''}<div style="color:#888;font-size:9px;margin-top:3px">공격력 = (무기 + 추가 공격력) × (1 + 공격력%)<br>최대 HP = (HP + 방어×3) × (1 + HP%)</div></div>
- <div><b>출처별 내역</b> <span style="font-size:9px;color:#aaa">흐린 줄 = 지금 적용 안 됨</span>${lines}</div></div>`);$('wb').scrollTop=0}
+ return(`<div class="cols"><div><b>최종 능력치</b>${fin.map(x=>row(x[0],x[1])).join('')}${life?`<div style="color:#9fe08a;font-size:9px;margin-top:3px">생활: ${life}</div>`:''}<div style="color:#888;font-size:9px;margin-top:3px">공격력 = (무기 + 추가 공격력) × (1 + 공격력%)<br>최대 HP = (HP + 방어×3) × (1 + HP%)</div></div>
+ <div><b>출처별 내역</b> <span style="font-size:9px;color:#aaa">흐린 줄 = 지금 적용 안 됨</span>${lines}</div></div>`)}
+function statWin(){charWin('stat')}
 function skillWin(){const tg=tagS;const L=PASSIVE.filter(p=>!p.aw&&pLearn(p)),A=PASSIVE.filter(p=>p.aw&&pLearn(p));
  const nrow=p=>{const auto=autoOn(p),sl=S.pslot.includes(p.id);return`<div class="row" style="padding:2px 5px"><div class="f" style="font-size:9px"><b>${p.n}</b> ${auto?tg('자동 · '+actWhy(p.cat),'#9fe08a'):sl?tg('칸 장착 · 적용','#7fd3ff'):tg('미적용','#ffd24a')} <span style="color:#aaa">${PROF[p.cat]} Lv${p.lv}</span><div style="color:#ccc">${p.d}</div></div>${auto&&!sl?'':`<button class="btn ${sl?'g':''}" data-ps="${p.id}">${sl?'빼기':'칸에 넣기'}</button>`}</div>`};
  const arow=p=>{const on=act(p.id);return`<div class="row" style="padding:2px 5px"><div class="f" style="font-size:9px"><b>${p.n}</b> ${on?tg('각성 칸 · 적용','#ff9be0'):tg('칸 필요','#ffd24a')} <span style="color:#aaa">${PROF[p.cat]} Lv${p.lv} ${p.lv>=20?'달인':'전문'}</span><div style="color:#ccc">${p.d}</div></div><button class="btn ${on?'g':''}" data-ps="${p.id}">${on?'빼기':'칸에 넣기'}</button></div>`};
@@ -972,4 +973,60 @@ function menuWin(){sfx('Move1',.4);const M=[['캐릭터','k_punch',charWin],['�
  win('메뉴',`<div class="grid">${M.map((m,i)=>`<div class="mi" data-m="${i}">${icon(m[1])}${m[0]}</div>`).join('')}</div>`);document.querySelectorAll('[data-m]').forEach(e=>e.onclick=()=>{sfx('Accept',.4);M[+e.dataset.m][2]()})}
 $('b_menu').onclick=menuWin;
 Object.assign(window.G,{CATS,JOBW,stats,statSrc,statWin,m4,catActive,setLife,lifeCat});
+
+// ===== P5: tabbed character window, paper-doll equipping, equipment visuals on the player =====
+const CW={tab:'eq',slot:'weapon'};
+const SLOTN=Object.fromEntries(SLOTS);
+function simEq(sl,k){const o=S.eq[sl];S.eq[sl]=k;const r={atk:atkPow(),def:totDef(),hp:maxHp(),crit:Math.round(critCh()*100)};S.eq[sl]=o;return r}
+function diffH(sl,k){const a=simEq(sl,S.eq[sl]),b=simEq(sl,k);const N={atk:'공격',def:'방어',hp:'HP',crit:'치명'};
+ return Object.keys(N).map(x=>{const d=Math.round((b[x]-a[x])*10)/10;if(!d)return'';return`<span style="color:${d>0?'#9fe08a':'#ff8a8a'}">${N[x]} ${d>0?'+':''}${d}${x==='crit'?'%':''}</span>`}).filter(Boolean).join(' ')||'<span style="color:#888">변화 없음</span>'}
+const diffT=(sl,k)=>diffH(sl,k).replace(/<[^>]+>/g,'');
+const score=(sl,k)=>{const r=simEq(sl,k);return r.atk*3+r.def*4+r.hp*.6+r.crit*2};
+const cands=sl=>Object.keys(S.bag).filter(k=>S.bag[k]>0&&ITEMS[k]&&ITEMS[k].slot===sl&&!Object.values(S.eq).includes(k));
+function bestEquip(){let n=0;for(const[sl]of SLOTS){let best=S.eq[sl],bs=score(sl,best);for(const k of cands(sl)){if(canEquip(k))continue;const s=score(sl,k);if(s>bs+.01){bs=s;best=k}}if(best!==S.eq[sl]){S.eq[sl]=best;n++}}
+ sfx(n?'Accept':'Cancel',.5);toast(n?`최적 장착: ${n}개 교체`:'이미 최적 장비예요');if(S.hp>maxHp())S.hp=maxHp();hud();save()}
+// ---- player look: armor tint + held weapon overlay ----
+const OC=document.createElement('canvas'),OX=OC.getContext('2d');
+const TINT={cloth:['#7fb0ff',.22],leather:['#8a5528',.38],plate:['#d8e0ea',.45],body:['#f2b98a',.38]};
+function drawPlayer(c,k,f,x,y,flip,ay,noWpn){const m=META[k];if(!m||!IM[k]||!IM[k].naturalWidth)return;const fw=m[0],fh=m[1],n=m[2];f=((f%n)+n)%n;const w=fw/4,h=fh/4;
+ if(OC.width!==fw||OC.height!==fh){OC.width=fw;OC.height=fh}OX.globalCompositeOperation='source-over';OX.globalAlpha=1;OX.clearRect(0,0,fw,fh);OX.drawImage(IM[k],f*fw,0,fw,fh,0,0,fw,fh);
+ const t=TINT[armorType()];if(t){OX.globalCompositeOperation='source-atop';OX.globalAlpha=t[1];OX.fillStyle=t[0];OX.fillRect(0,0,fw,fh*.8)}
+ c.save();c.translate(Math.round(x),Math.round(y));if(flip)c.scale(-1,1);c.drawImage(OC,-w*.5,-h*ay,w,h);
+ const hk=S.eq.helmet;if(hk&&IM[ITEMS[hk].ic])c.drawImage(IM[ITEMS[hk].ic],-4,-22,8,8);
+ const wk=S.eq.weapon;if(wk&&!noWpn){const im=IM[ITEMS[wk].ic];if(im&&im.naturalWidth){const cat=ITEMS[wk].cat;let a=-.7;if(P.atk>0){const p=Math.min(1,(.36-P.atk)/.36);a=-1.9+3.2*p}if(cat==='bow'||cat==='tome')a=0;if(cat==='staff')a=-.15;
+  c.translate(6,-8);c.rotate(a);const s=cat==='sword2'||cat==='spear'||cat==='staff'?11:8;c.drawImage(im,-s*.25,-s*.85,s,s)}}
+ c.restore()}
+function dollDraw(){const cv=$('pdoll');if(!cv)return;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;c.clearRect(0,0,cv.width,cv.height);c.save();c.scale(3,3);const[k,,ay]=pSpr();drawPlayer(c,k,Math.floor(tt*6),cv.width/6,cv.height/3-6,false,ay);c.restore()}
+setInterval(()=>{if(CW.tab==='eq'&&$('pdoll')&&!$('modal').classList.contains('hide'))dollDraw()},120);
+// ---- tabbed character window ----
+function charWin(tab){if(tab)CW.tab=tab;const T=[['eq','장비'],['stat','스탯'],['prof','숙련도'],['pas','패시브']];
+ const bar=`<div style="display:flex;gap:4px;margin-bottom:5px;align-items:center">${T.map(([k,n])=>`<button class="btn ${CW.tab===k?'':'g'}" data-tab="${k}" style="min-width:64px">${n}</button>`).join('')}<span style="flex:1"></span><span style="font-size:10px;color:#ccc">${JOBN[S.job]} · 캐릭터 Lv <b style="color:#ffd24a">${charLv()}</b></span></div>`;
+ const body={eq:eqTab,stat:statHTML,prof:profTab,pas:pasTab}[CW.tab]();
+ win('캐릭터',bar+body);document.querySelectorAll('#wb [data-tab]').forEach(e=>e.onclick=()=>{sfx('Move1',.3);charWin(e.dataset.tab)});$('wb').scrollTop=0;
+ if(CW.tab==='eq')eqBind();if(CW.tab==='pas')document.querySelectorAll('#wb [data-ps]').forEach(e=>e.onclick=()=>{slotToggle(e.dataset.ps);charWin('pas')})}
+function slotBox(sl){const k=S.eq[sl],on=CW.slot===sl;return`<div data-sl="${sl}" style="width:44px;cursor:pointer;text-align:center;font-size:8px">${k?cell(k,1).replace('data-i=','data-x=').replace(/border:2px solid/,on?'outline:2px solid #ffd24a;border:2px solid':'border:2px solid'):`<div style="width:40px;height:40px;margin:auto;border:2px ${on?'solid #ffd24a':'dashed #555'};border-radius:4px;display:flex;align-items:center;justify-content:center;color:#777">${SLOTN[sl]}</div>`}<div style="color:${k?gcol(k):'#777'};white-space:nowrap;overflow:hidden">${k?SLOTN[sl]:'비어 있음'}</div></div>`}
+function eqTab(){const sl=CW.slot,k=S.eq[sl],L=cands(sl).sort((a,b)=>score(sl,b)-score(sl,a));
+ const col=a=>`<div style="display:flex;flex-direction:column;gap:3px">${a.map(slotBox).join('')}</div>`;
+ const doll=`<div style="display:flex;gap:4px;align-items:flex-start">${col(['helmet','armor','gloves','boots'])}<div style="width:120px;text-align:center"><canvas id="pdoll" width="120" height="150" style="position:static;display:block;margin:auto;width:120px;height:150px;background:radial-gradient(#3a5a3a,#1b261b);border-radius:8px;image-rendering:pixelated"></canvas>
+  <div style="font-size:9px;color:#ddd">공격 <b>${atkPow().toFixed(1)}</b> · 방어 <b>${totDef()}</b><br>HP <b>${maxHp()}</b> · 치명 <b>${Math.round(critCh()*100)}%</b></div></div>${col(['weapon','ring','neck'])}</div>
+  <div style="display:flex;gap:4px;margin-top:4px"><button class="btn" id="b_best" style="flex:1">최적 장착</button><button class="btn g" id="b_off" style="flex:1">모두 해제</button></div>`;
+ const cur=k?`<div class="row" style="padding:3px 5px">${cell(k,1).replace('data-i=','data-x=')}<div class="f" style="font-size:9px"><b style="color:${gcol(k)}">${ITEMS[k].n}${upLv(k)?' +'+upLv(k):''}</b> <span style="color:#9fe08a">착용 중</span><div style="color:#ccc">${statTxt(k)}</div></div><button class="btn g" id="e_off">해제</button><button class="btn" id="e_up">강화</button><button class="btn g" id="e_det">상세</button></div>`
+  :`<div style="color:#888;font-size:9px;padding:4px">${SLOTN[sl]} 칸이 비어 있어요${sl==='weapon'?' · 맨손으로 싸워요(맨손 숙련)':sl==='armor'?' · 맨몸 상태(맨몸 숙련)':''}</div>`;
+ const list=L.map(x=>{const r=canEquip(x);return`<div class="row" style="padding:2px 5px;${r?'opacity:.55':''}">${cell(x,1).replace('data-i=','data-x=')}<div class="f" style="font-size:9px"><b style="color:${gcol(x)}">${ITEMS[x].n}${upLv(x)?' +'+upLv(x):''}</b> <span style="color:#aaa">${statTxt(x)}</span><div>${r?`<span style="color:#ff8a8a">${r}</span>`:diffH(sl,x)}</div></div>${r?'':`<button class="btn" data-eq="${x}">장착</button>`}</div>`}).join('')||'<div style="color:#777;font-size:9px;padding:4px">가방에 낄 수 있는 장비가 없어요</div>';
+ return`<div style="display:flex;gap:8px"><div>${doll}</div><div style="flex:1;min-width:0"><b style="color:#ffd24a">${SLOTN[sl]}</b> <span style="font-size:9px;color:#aaa">칸을 누르면 바뀌어요 · 초록 = 좋아짐, 빨강 = 나빠짐</span>${cur}<div style="margin-top:3px;font-size:9px;color:#aaa">가방의 ${SLOTN[sl]} ${L.length}개</div>${list}</div></div>`}
+function eqBind(){const q=(s,f)=>{const e=$(s);if(e)e.onclick=f};
+ document.querySelectorAll('#wb [data-sl]').forEach(e=>e.onclick=()=>{CW.slot=e.dataset.sl;sfx('Move1',.3);charWin('eq')});
+ document.querySelectorAll('#wb [data-eq]').forEach(e=>e.onclick=()=>{const k=e.dataset.eq;const d=diffT(CW.slot,k);equip(k);toast(`장착: ${ITEMS[k].n} (${d})`);charWin('eq')});
+ q('e_off',()=>{S.eq[CW.slot]=null;sfx('Cancel',.4);if(S.hp>maxHp())S.hp=maxHp();hud();save();charWin('eq')});
+ q('e_up',()=>smithWin('u'));q('e_det',()=>itemDetail(S.eq[CW.slot],()=>charWin('eq')));
+ q('b_best',()=>{bestEquip();charWin('eq')});q('b_off',()=>{for(const[s]of SLOTS)S.eq[s]=null;sfx('Cancel',.4);if(S.hp>maxHp())S.hp=maxHp();hud();save();charWin('eq')});dollDraw()}
+function profTab(){const pr=c=>{const p=S.prof[c],g=grade(p.lv),on=catActive(c);return`<div class="row" style="padding:2px 4px;${p.lv?'':'opacity:.45'}">${icon(CATS[c].ic)}<div class="f" style="font-size:10px">${CATS[c].n} <b>Lv ${p.lv}</b> <span class="gr" style="background:${g[2]}">${g[1]}</span>${on&&p.lv?'<span style="color:#9fe08a;font-size:9px"> 적용 중</span>':''}<div class="pb"><i style="width:${p.lv?p.xp/need(p.lv)*100:0}%"></i></div></div></div>`};
+ return['무기','방어','생활'].map(g=>`<div style="color:#ffd24a;margin-top:3px"><b>${g}</b></div><div style="display:grid;grid-template-columns:repeat(${g==='무기'?4:4},1fr);gap:2px 6px">${Object.keys(CATS).filter(c=>CATS[c].g===g).map(pr).join('')}</div>`).join('')+'<div style="color:#888;font-size:9px;margin-top:4px">캐릭터 Lv = 모든 숙련 레벨의 합 · 견습 Lv1 · 숙련 Lv5 · 전문 Lv10 · 달인 Lv20</div>'}
+function pasTab(){const tg=tagS,on=PASSIVE.filter(p=>act(p.id)),lr=PASSIVE.filter(p=>pLearn(p)&&!act(p.id));
+ const r=p=>`<div class="row" style="padding:2px 5px"><div class="f" style="font-size:9px"><b>${p.n}</b> ${p.aw?tg('각성','#ff9be0'):tg('일반','#f6d68a')} <span style="color:#ccc">${p.d}</span></div>${(p.aw||!autoOn(p))?`<button class="btn ${act(p.id)?'g':''}" data-ps="${p.id}">${act(p.id)?'빼기':'칸에 넣기'}</button>`:tg('자동','#9fe08a')}</div>`;
+ return slotUI()+`<div class="cols"><div><b style="color:#9fe08a">적용 중 ${on.length}개</b>${on.map(r).join('')||'<div style="color:#777">없음</div>'}</div><div><b style="color:#ffd24a">배웠지만 꺼짐 ${lr.length}개</b>${lr.map(r).join('')||'<div style="color:#777">없음</div>'}</div></div><div style="color:#888;font-size:9px">스킬 트리와 액티브 스킬 칸은 메뉴 → 스킬</div>`}
+// ---- bag: tap equipment to equip right away ----
+{const _bw=bagWin;bagWin=function(){_bw();const h=document.createElement('div');h.style.cssText='font-size:9px;color:#aaa;margin-top:3px';h.textContent='장비를 누르면 바로 장착 · 착용 중(E) 장비나 다른 아이템을 누르면 상세';$('wb').appendChild(h);
+ document.querySelectorAll('#wb .ic').forEach(e=>e.onclick=()=>{const k=e.dataset.i,it=ITEMS[k];if(it.slot&&!Object.values(S.eq).includes(k)&&!canEquip(k)){const d=diffT(it.slot,k);equip(k);toast(`장착: ${it.n} (${d})`);bagWin()}else itemDetail(k,bagWin)})}}
+Object.assign(window.G,{charWin,bestEquip,CW,drawPlayer,bagWin});
 </script></body></html>
