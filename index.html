@@ -536,7 +536,7 @@ function newInst(b){S.uid=(S.uid||0)+1;const k=b+'#'+S.uid;regInst(k);return k}
 function migrate(){S.uid=S.uid||0;S.up=S.up||{};for(const o of[S.bag,S.store||{}])for(const k of Object.keys(o))regInst(k);for(const s in S.eq)if(S.eq[s])regInst(S.eq[s]);
  for(const s in S.eq){const k=S.eq[s];if(k&&ITEMS[k]&&ITEMS[k].slot&&!k.includes('#')){const n=newInst(k);if(S.up[k])S.up[n]=S.up[k];S.bag[n]=1;if(S.bag[k]){S.bag[k]--;if(!S.bag[k])delete S.bag[k]}S.eq[s]=n}}
  for(const o of[S.bag,S.store||{}])for(const k of Object.keys(o)){const it=ITEMS[k];if(it&&it.slot&&!k.includes('#')){const c=o[k];delete o[k];for(let i=0;i<c;i++){const n=newInst(k);if(i===0&&S.up[k])S.up[n]=S.up[k];o[n]=1}}}
- S.auto=Object.assign({thr:.4,sk:[1,1,1,1],min:0},S.auto||{})}
+ S.pslot=S.pslot||[];S.aslot=S.aslot||[];S.auto=Object.assign({thr:.4,sk:[1,1,1,1],min:0},S.auto||{})}
 // ---------- proficiency stats + awakening ----------
 const wcat=()=>wpn().cat,arm=()=>!!S.eq.armor,PL=c=>S.prof[c].lv;
 PASSIVE.forEach(p=>p.cond={wood:()=>wcat()==='axe',crit:()=>wcat()==='sword',hp:arm,fast:()=>!S.eq.weapon,tough:()=>!arm()}[p.id]);
@@ -546,7 +546,10 @@ PASSIVE.push({id:'aw_sw1',n:'검의 각성',cat:'sword',lv:10,aw:1,d:'치명타 
  {id:'aw_ar1',n:'갑주의 각성',cat:'armor',lv:10,aw:1,d:'방어 +2 (상시)'},{id:'aw_ar2',n:'철의 몸',cat:'armor',lv:20,aw:1,d:'최대 HP +40 (상시)'},
  {id:'aw_fi1',n:'주먹의 각성',cat:'fist',lv:10,aw:1,d:'공격 속도 +10% (상시)'},{id:'aw_fi2',n:'권성',cat:'fist',lv:20,aw:1,d:'치명타 +5% (상시)'},
  {id:'aw_bo1',n:'맨몸의 각성',cat:'body',lv:10,aw:1,d:'받는 피해 5% 감소 (상시)'},{id:'aw_bo2',n:'불굴',cat:'body',lv:20,aw:1,d:'HP 초당 1 회복 (상시)'});
-const act=id=>{const p=PASSIVE.find(x=>x.id===id);return S.prof[p.cat].lv>=p.lv&&(p.aw||!p.cond||p.cond())};
+const pLearn=p=>S.prof[p.cat].lv>=p.lv;
+const nSlots=()=>3+(charLv()>=20)+(charLv()>=40),aSlots=()=>1+(charLv()>=30)+(charLv()>=60);
+const act=id=>{const p=PASSIVE.find(x=>x.id===id);if(!pLearn(p))return false;if(p.aw)return (S.aslot||[]).includes(id);return (p.cond&&p.cond())||(S.pslot||[]).includes(id)};
+function slotToggle(id){const p=PASSIVE.find(x=>x.id===id),k=p.aw?'aslot':'pslot',L=S[k],max=p.aw?aSlots():nSlots();const i=L.indexOf(id);if(i>=0)L.splice(i,1);else{if(!pLearn(p))return toast('아직 배우지 않았어요');if(L.length>=max)return toast('빈 칸이 없어요');L.push(id)}sfx('Accept',.4);if(S.hp>maxHp())S.hp=maxHp();hud();save();skillWin()}
 function totDef(){return eqSum('def')+setBon('def')+(arm()?Math.floor(PL('armor')/4):0)+(act('aw_ar1')?2:0)}
 function critCh(){return (wcat()==='sword'?.005*PL('sword')+(act('crit')?.15:0):0)+eqSum('crit')+st(S.eq.weapon,'crit')+setBon('crit')+(act('aw_sw1')?.05:0)+(act('aw_fi2')?.05:0)}
 function maxHp(){return 80+(arm()?PL('armor')*8:PL('body')*6)+totDef()*3+eqSum('hp')+setBon('hp')+(act('hp')?20:0)+(act('aw_ar2')?40:0)}
@@ -557,12 +560,19 @@ function spdMul(){return (1+setBon('spd'))*(P.st&&P.st.slow>0?.6:1)}
 function onFell(t){let n=1+(act('wood')?1:0)+(wcat()==='axe'&&Math.random()<.03*PL('axe')?1:0);const x=t.x*T+8,y=t.y*T+14;spawnLoot('wood',n,x,y);qProg('chop');if(PL('axe')>=5&&Math.random()<.15)spawnLoot('hwood',1,x,y)}
 function profLines(){const w=wcat();return[['axe',`공격 +${12*PL('axe')}% · 추가 나무 확률 ${3*PL('axe')}%`,w==='axe','도끼 장착 시'],['sword',`공격 +${12*PL('sword')}% · 치명 +${(.5*PL('sword')).toFixed(1)}%`,w==='sword','검 장착 시'],
  ['fist',`공격 +${12*PL('fist')}% · 공격 속도 +${(1.5*PL('fist')).toFixed(1)}%`,w==='fist','무기 없을 때'],['armor',`HP +${8*PL('armor')} · 방어 +${Math.floor(PL('armor')/4)}`,arm(),'갑옷 착용 시'],['body',`HP +${6*PL('body')} · 받는 피해 -${Math.min(20,PL('body'))}%`,!arm(),'갑옷 없을 때']]}
-function awkLine(){const a=PASSIVE.filter(p=>p.aw&&act(p.id));return`<div style="margin:3px 0;color:#ff9be0"><b>각성 패시브 ${a.length}개 상시 적용</b>${a.length?'<div style="font-size:9px;color:#ddd">'+a.map(p=>p.n).join(', ')+'</div>':'<div style="font-size:9px;color:#888">숙련 전문(Lv10)·달인(Lv20)에서 해금</div>'}</div>`}
+function awkLine(){const a=PASSIVE.filter(p=>p.aw&&act(p.id));return`<div style="margin:3px 0;color:#ff9be0"><b>각성 칸 ${a.length}/${aSlots()} 적용 중</b>${a.length?'<div style="font-size:9px;color:#ddd">'+a.map(p=>p.n).join(', ')+'</div>':'<div style="font-size:9px;color:#888">숙련 전문(Lv10)·달인(Lv20)에서 해금</div>'}</div>`}
 function skillWin(){const tag=(t,c)=>`<span class="gr" style="background:${c};color:#111">${t}</span>`;
  win('스킬',SKILLS.map((s,i)=>`<div class="row">${icon(s.ic)}<div class="f"><b>${s.n}</b> · 쿨타임 ${s.cd}초 · MP ${s.mp} · 공격력 x${s.mul}${['',' · 화상',' · 기절',' · 둔화'][i]}</div><span style="color:${S.job==='warrior'&&S.prof.sword.lv>=s.req?'#9fe08a':'#888'}">검 숙련 Lv ${s.req}</span></div>`).join('')+
  '<div style="margin:8px 0 2px;color:#7fd3ff"><b>숙련 능력치 (레벨마다 자동, 장비 조건)</b></div>'+profLines().map(([c,t,on,w])=>`<div class="row" style="${on?'':'opacity:.5'}"><div class="f"><b>${PROF[c]} Lv ${PL(c)}</b> ${on?tag('지금 적용','#9fe08a'):tag(w,'#888')}<div style="color:#ccc">${t}</div></div></div>`).join('')+
- '<div style="margin:8px 0 2px;color:#ffd24a"><b>패시브 (숙련 Lv5, 장비 조건)</b></div>'+PASSIVE.filter(p=>!p.aw).map(p=>{const lv=PL(p.cat)>=p.lv,on=act(p.id);return`<div class="row" style="${on?'':'opacity:.55'}"><div class="f"><b>${p.n}</b> ${on?tag('지금 적용','#9fe08a'):lv?tag('조건: '+p.cw,'#ffd24a'):tag('잠김','#888')}<div style="color:#ccc">${p.d}</div></div><span>${PROF[p.cat]} Lv ${p.lv}</span></div>`}).join('')+
- '<div style="margin:8px 0 2px;color:#ff9be0"><b>각성 패시브 (전문·달인, 무기와 상관없이 영구)</b></div>'+PASSIVE.filter(p=>p.aw).map(p=>{const on=act(p.id);return`<div class="row" style="${on?'':'opacity:.5'}"><div class="f"><b>${p.n}</b> ${on?tag('각성 · 상시','#ff9be0'):tag('잠김','#888')}<div style="color:#ccc">${p.d}</div></div><span>${PROF[p.cat]} Lv ${p.lv} (${p.lv>=20?'달인':'전문'})</span></div>`}).join(''))}
+ slotUI()+'<div style="margin:8px 0 2px;color:#ffd24a"><b>일반 패시브 (장착 장비 계열은 자동, 다른 계열은 칸에 넣어 사용)</b></div>'+PASSIVE.filter(p=>!p.aw).map(p=>{const lv=pLearn(p),auto=p.cond&&p.cond(),sl=S.pslot.includes(p.id);return`<div class="row" style="${lv?'':'opacity:.55'}"><div class="f"><b>${p.n}</b> ${!lv?tag('잠김','#888'):auto?tag('자동 적용 · '+p.cw,'#9fe08a'):sl?tag('칸 장착 · 적용','#7fd3ff'):tag('미적용','#ffd24a')}<div style="color:#ccc">${p.d}</div></div><span>${PROF[p.cat]} Lv ${p.lv}</span>${lv&&!auto?`<button class="btn ${sl?'g':''}" data-ps="${p.id}">${sl?'빼기':'칸에 넣기'}</button>`:''}</div>`}).join('')+
+ '<div style="margin:8px 0 2px;color:#ff9be0"><b>각성 패시브 (각성 칸에 넣은 것만 적용, 무기와 상관없이 유지)</b></div>'+PASSIVE.filter(p=>p.aw).map(p=>{const lv=pLearn(p),on=act(p.id);return`<div class="row" style="${lv?'':'opacity:.5'}"><div class="f"><b>${p.n}</b> ${!lv?tag('잠김','#888'):on?tag('각성 칸 · 적용','#ff9be0'):tag('배움 · 칸 필요','#ffd24a')}<div style="color:#ccc">${p.d}</div></div><span>${PROF[p.cat]} Lv ${p.lv} (${p.lv>=20?'달인':'전문'})</span>${lv?`<button class="btn ${on?'g':''}" data-ps="${p.id}">${on?'빼기':'칸에 넣기'}</button>`:''}</div>`}).join(''));
+ document.querySelectorAll('#wb [data-ps]').forEach(e=>e.onclick=()=>slotToggle(e.dataset.ps))}
+function slotUI(){const box=(id,c,i)=>{const p=id&&PASSIVE.find(x=>x.id===id);return`<div style="width:86px;height:38px;border:2px solid ${c};border-radius:5px;background:#0006;display:flex;align-items:center;justify-content:center;text-align:center;font-size:9px;${p?'cursor:pointer':''}" ${p?`data-ps="${id}"`:''}>${p?`<b>${p.n}</b>`:'<span style="color:#888">빈 칸</span>'}</div>`};
+ const lock=(lv,c)=>`<div style="width:86px;height:38px;border:2px dashed #555;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#777">🔒 캐릭터 Lv ${lv}</div>`;
+ const row=(L,max,all,c)=>all.map((lv,i)=>i<max?box(L[i],c,i):lock(lv,c)).join('');
+ return`<div style="margin:8px 0 2px;color:#7fd3ff"><b>패시브 칸</b> <span style="color:#aaa;font-size:9px">(캐릭터 Lv ${charLv()} · 칸을 누르면 빼기)</span></div>
+ <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="width:52px;color:#7fd3ff">일반 ${S.pslot.length}/${nSlots()}</span>${row(S.pslot,nSlots(),[0,0,0,20,40],'#7fd3ff')}</div>
+ <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap"><span style="width:52px;color:#ff9be0">각성 ${S.aslot.length}/${aSlots()}</span>${row(S.aslot,aSlots(),[0,30,60],'#ff9be0')}</div>`}
 // ---------- statuses ----------
 const STI={stun:['k_thunder','#ffe14a','기절'],slow:['k_rock','#7fd3ff','둔화'],bleed:['k_cut','#ff5050','출혈'],burn:['k_fire','#ff9a3a','화상']};
 function addSt(e,k,t){e.st=e.st||{};e.st[k]=Math.max(e.st[k]||0,t)}
@@ -693,5 +703,5 @@ function autoWin(){const A=S.auto;win('자동 사냥 설정',`<div class="row"><
 function menuWin(){sfx('Move1',.4);const M=[['캐릭터','k_punch',charWin],['가방','i_leather',bagWin],['퀘스트','k_talk',questWin],['스킬','k_cut',skillWin],['지도','k_harvest',mapWin],['획득 기록','i_coin',logWin],['자동 사냥','k_thunder',autoWin],['설정','i_scroll',setWin],['크레딧','i_potion',creditWin]];
  win('메뉴',`<div class="grid">${M.map((m,i)=>`<div class="mi" data-m="${i}">${icon(m[1])}${m[0]}</div>`).join('')}</div>`);document.querySelectorAll('[data-m]').forEach(e=>e.onclick=()=>{sfx('Accept',.4);M[+e.dataset.m][2]()})}
 $('b_menu').onclick=menuWin;
-Object.assign(window.G,{AUTO,dash,autoWin,skillWin,act,migrate});
+Object.assign(window.G,{slotToggle,nSlots,aSlots,AUTO,dash,autoWin,skillWin,act,migrate});
 </script></body></html>
