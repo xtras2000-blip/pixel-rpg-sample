@@ -1032,4 +1032,61 @@ function rigFrame(){if(P.atk>0)return 10+Math.min(3,Math.floor((.36-P.atk)/.36*4
 function drawPlayer(c,k,f,x,y,flip,ay){const w=vb(S.eq.weapon);const row=VIS.styles.indexOf(w&&VIS.grip[w]||'fist');const fr=c===ctx?rigFrame():Math.floor(tt*4)%4;
  c.save();c.translate(Math.round(x),Math.round(y));if(flip)c.scale(-1,1);
  for(const n of rigLayers()){const im=IM['rg_'+n];if(im&&im.naturalWidth)c.drawImage(im,fr*48,row*48,48,48,-12,-21.5,24,24)}c.restore()}
+
+// ===== P6: per-proficiency skill tree browser (every proficiency to the end) =====
+GRADES.unshift([30,'초월','#ff7a4a']);
+// fill out every proficiency: +Lv15 normal (weak), +Lv30 awakening; life skills get Lv20/30 awakenings
+const PS2={sword1:[['베기 숙달',{atkP:3}],['검신일체',{crit:10,atkP:5}]],sword2:[['자세 안정',{red:2}],['대지 가르기',{atkP:18}]],dagger:[['급소 노리기',{crit:2}],['암영',{crit:8,spd:5}]],
+ dual:[['양손 균형',{crit:2}],['난무',{aspd:15}]],spear:[['긴 손잡이',{range:2}],['창성',{atkP:12,range:4}]],bow:[['호흡 조절',{aspd:3}],['신궁',{crit:10,atkP:6}]],
+ staff:[['마력 집중',{mpr:5}],['마력 폭주',{skill:18}]],tome:[['빠른 영창',{skill:3}],['현자의 서',{skill:10,mp:30}]],axe:[['나무꾼의 팔',{yw:5,atkP:2}],['도끼 군주',{atkP:15}]],
+ mace:[['묵직한 손',{atkP:3}],['대지 분쇄',{stun:10,atkP:6}]],fist:[['단단한 주먹',{atkF:1}],['백보신권',{atkP:15}]],cloth:[['가벼운 옷',{spd:2}],['대현자의 로브',{skill:10,mpr:20}]],
+ leather:[['질긴 가죽',{hp:10}],['그림자 망토',{spd:8,crit:4}]],plate:[['어깨 보호',{def:1}],['불괴의 성채',{red:10,hpP:5}]],body:[['굳은살',{hp:10}],['금강불괴',{red:8,regen:1}]],
+ lumber:[['숲의 주인',{hpP:5}],['세계수의 가호',{regen:1,hpP:5}]],prune:[['정원의 주인',{regen:.5}],['꽃의 춤',{spd:6,aspd:5}]],gather:[['숲의 축복',{hpP:5}],['영약 제조',{potion:40}]],
+ mine:[['대지의 주인',{def:3}],['광맥의 심장',{def:4,hpP:6}]]};
+for(const c in PS2){const life=CATS[c].g==='생활';const[a,b]=PS2[c];
+ if(life){PASSIVE.push({id:c+'_a1',n:a[0],cat:c,lv:20,aw:1,s:a[1],d:fmtS(a[1])})}else PASSIVE.push({id:c+'_n2',n:a[0],cat:c,lv:15,aw:0,s:a[1],d:fmtS(a[1])});
+ PASSIVE.push({id:c+'_a3',n:b[0],cat:c,lv:30,aw:1,s:b[1],d:fmtS(b[1])})}
+const PS3={fist:[['주먹 쥐기',{aspd:2}],['연타',{aspd:4}],['일권',{crit:12,atkP:8}]],cloth:[['편한 옷',{mpr:3}],['마력 실',{mp:15}],['성자의 옷',{skill:12,hpP:5}]],
+ leather:[['손질한 가죽',{def:1}],['사냥꾼 차림',{crit:2}],['바람 가르기',{spd:10,aspd:6}]],plate:[['무게 적응',{hp:8}],['방패 막기',{red:3}],['강철 요새',{def:6,hpP:8}]],
+ body:[['맷집',{hp:6}],['숨 고르기',{regen:.3}],['불사신',{red:10,hpP:8}]],mine:[['곡괭이 요령',{yo:5}],['단단한 팔',{atkF:1}],['보석의 눈',{ygem:8,def:3}]],
+ lumber:[['도끼질 감각',{yw:5}],['통나무 근력',{hp:10}],['거목 쓰러뜨리기',{atkP:8,yhw:10}]],prune:[['손끝 감각',{yl:5}],['가지 읽기',{crit:2}],['정원의 춤',{aspd:8,spd:5}]],
+ gather:[['향 맡기',{yh:5}],['약초 지식',{potion:10}],['생명의 씨앗',{regen:1,potion:20}]]};
+for(const c in PS3){const[a,b,d]=PS3[c];PASSIVE.push({id:c+'_n0',n:a[0],cat:c,lv:3,s:a[1],d:fmtS(a[1])},{id:c+'_n3',n:b[0],cat:c,lv:25,s:b[1],d:fmtS(b[1])},{id:c+'_a4',n:d[0],cat:c,lv:40,aw:1,s:d[1],d:fmtS(d[1])})}
+const LIFEJ={lumber:'woodcutter',prune:'gardener',gather:'herbalist'};
+function profNodes(c){const C=CATS[c],N=[];const lvOf=c;
+ N.push({t:'s',n:'기본 숙련 효과',lv:1,ic:C.ic,d:'레벨마다: '+fmtS(C.per)+(C.g==='무기'?' (장착 중일 때)':C.g==='방어'?(c==='body'?' (갑옷 없을 때)':' (착용 중일 때)'):' (항상)'),pl:c});
+ for(const p of PASSIVE)if(p.cat===c)N.push({t:p.aw?'w':'p',n:p.n,lv:p.lv,ic:p.aw?'k_atkup':'k_defup',d:p.d,id:p.id,pl:c});
+ const jobs=LIFEJ[c]?[LIFEJ[c]]:Object.keys(JOBW).filter(j=>JOBW[j].includes(c));
+ for(const j of jobs){for(const br of TREES[j])for(const n of br.nodes){if(n.t==='a')N.push({t:'a',n:n.n,lv:n.lv,ic:n.ic,d:`MP ${n.mp} · 쿨 ${n.cd}초${n.mul?' · 공격력 x'+n.mul:''}${n.st?' · '+STI[n.st][2]:''}`,job:j,br:br.b,pl:JCAT[j],sk:n});
+  else{const p=PASSIVE.find(x=>x.id===n.id);if(p&&p.cat!==c&&JOBW[p.cat])N.push({t:'p',n:p.n,lv:p.lv,ic:'k_defup',d:p.d,id:p.id,job:j,br:br.b,pl:p.cat})}}
+  for(const p of PASSIVE)if(p.cat===j&&!N.some(x=>x.id===p.id))N.push({t:'p',n:p.n,lv:p.lv,ic:'k_defup',d:p.d,id:p.id,job:j,pl:j})}
+ return N.sort((a,b)=>a.lv-b.lv||'sapw'.indexOf(a.t)-'sapw'.indexOf(b.t))}
+const TT={s:['기본','#aaa'],a:['액티브','#9fe08a'],p:['일반 패시브','#f6d68a'],w:['각성 패시브','#ff9be0']};
+function nodeSt(n){const cur=PL(n.pl);if(n.job&&JOBW[n.job]&&S.job!==n.job)return[(cur>=n.lv?'조건 충족 · ':'')+JOBN[n.job]+' 전용','#aaa',0];if(cur>=n.lv)return['배움','#9fe08a',1];return null}
+let TW={c:null};
+function treeWin(c){TW.c=c||TW.c||wcat();const sel=TW.c,C=CATS[sel];
+ const left=['무기','방어','생활'].map(g=>`<div style="color:#ffd24a;font-size:10px;margin:4px 0 1px"><b>${g}</b></div>`+Object.keys(CATS).filter(k=>CATS[k].g===g).map(k=>{const lv=PL(k),gr=grade(lv);return`<div data-tc="${k}" style="display:flex;align-items:center;gap:4px;padding:2px 4px;border-radius:4px;cursor:pointer;${k===sel?'background:#f6d68a33;outline:1px solid #f6d68a':''};${lv?'':'opacity:.55'}">${icon(CATS[k].ic).replace('class="px"','class="px" style="width:18px;height:18px"')}<span style="flex:1;font-size:10px">${CATS[k].n}</span><span style="font-size:9px">Lv${lv}</span><span class="gr" style="background:${gr[2]};font-size:8px">${gr[1]}</span></div>`}).join('')).join('');
+ const N=profNodes(sel),cur=PL(sel),lvs=[...new Set(N.map(n=>n.lv))];let nextLv=lvs.find(l=>l>cur);
+ const st=n=>{const s=nodeSt(n);if(s)return s;const left=n.lv-PL(n.pl);return left<=(n.lv===nextLv?99:0)||n.lv===lvs.find(l=>l>PL(n.pl))?[`해금 가능 · ${left}레벨 남음`,'#ffd24a',2]:[`잠김 · ${left}레벨 남음`,'#888',0]};
+ const gname=l=>grade(l)[1];
+ const rows=lvs.map((l,i)=>{const ns=N.filter(n=>n.lv===l);const reached=cur>=l;
+  return`<div style="display:flex;gap:6px;position:relative;padding-bottom:6px"><div style="width:44px;flex:none;text-align:center;position:relative"><div style="position:absolute;left:21px;top:${i?0:14}px;bottom:${i===lvs.length-1?'calc(100% - 14px)':'0'};width:2px;background:${reached?'#9fe08a':'#555'}"></div><div style="position:relative;display:inline-block;margin-top:4px;padding:1px 4px;border-radius:8px;font-size:9px;background:${reached?'#9fe08a':'#333'};color:${reached?'#111':'#aaa'};border:1px solid ${grade(l)[2]}"><b>Lv${l}</b><br>${gname(l)}</div></div>
+  <div style="flex:1;display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start;border-left:2px dashed ${reached?'#9fe08a66':'#ffffff22'};padding-left:6px">${ns.map(n=>{const s=st(n),k=N.indexOf(n);return`<div data-nd="${k}" style="width:150px;cursor:pointer;border:2px solid ${TT[n.t][1]}${s[2]?'':'55'};border-radius:6px;padding:3px;background:#0006;display:flex;gap:4px;${s[2]?'':'opacity:.6'}">${icon(n.ic).replace('class="px"','class="px" style="width:22px;height:22px;flex:none"')}<div style="font-size:9px;line-height:1.25;min-width:0"><b>${n.n}</b><div style="color:${TT[n.t][1]}">${TT[n.t][0]}${n.job?' · '+JOBN[n.job]:''}</div><div style="color:${s[1]}">${s[0]}</div></div></div>`}).join('')}</div></div>`}).join('');
+ const g=grade(cur);
+ win('스킬 트리',`<div style="display:flex;gap:8px;height:calc(100vh - 118px)"><div style="width:150px;flex:none;overflow-y:auto;padding-right:2px">${left}</div>
+  <div style="flex:1;overflow-y:auto;position:relative" id="trw"><div style="position:sticky;top:0;background:#2b2236;z-index:2;padding:2px 0 4px;font-size:10px"><b style="color:#ffd24a;font-size:12px">${C.n}</b> 숙련 Lv ${cur} <span class="gr" style="background:${g[2]}">${g[1]}</span> <span style="color:#aaa">· 노드 ${N.length}개 · 견습 1 → 숙련 5 → 전문 10 → 달인 20 → 초월 30</span>
+  <div style="display:flex;gap:8px;font-size:9px;margin-top:2px">${Object.values(TT).map(t=>`<span style="color:${t[1]}">■ ${t[0]}</span>`).join('')}</div></div>${rows}</div></div><div id="tpop"></div>`);
+ $('wb').scrollTop=0;document.querySelectorAll('#wb [data-tc]').forEach(e=>e.onclick=()=>{sfx('Move1',.3);treeWin(e.dataset.tc)});
+ document.querySelectorAll('#wb [data-nd]').forEach(e=>e.onclick=()=>nodePop(N[+e.dataset.nd],st(N[+e.dataset.nd])))}
+function nodePop(n,s){const p=$('tpop');const P2=n.id&&PASSIVE.find(x=>x.id===n.id);const can=P2&&pLearn(P2);const on=P2&&act(P2.id);
+ p.innerHTML=`<div style="position:absolute;inset:0;background:#0008;z-index:5;display:flex;align-items:center;justify-content:center" id="tpx"><div style="width:320px;background:#3a2b44;border:2px solid ${TT[n.t][1]};border-radius:8px;padding:10px" onclick="event.stopPropagation()">
+ <div style="display:flex;gap:8px;align-items:center">${icon(n.ic).replace('class="px"','class="px" style="width:36px;height:36px"')}<div><b style="font-size:13px">${n.n}</b><div style="color:${TT[n.t][1]};font-size:10px">${TT[n.t][0]}${n.br?' · '+n.br+' 갈래':''}${n.job?' · '+JOBN[n.job]:''}</div></div></div>
+ <div style="margin:6px 0;font-size:11px">${n.d}</div><div style="font-size:10px;color:#aaa">해금: ${PROF[n.pl]} Lv ${n.lv} (${grade(n.lv)[1]}) · 현재 Lv ${PL(n.pl)}</div><div style="font-size:10px;color:${s[1]}">${s[0]}</div>
+ ${n.t==='w'?'<div style="font-size:9px;color:#ff9be0">각성 칸에 넣은 것만 적용 · 무기와 상관없이 유지</div>':n.t==='p'?'<div style="font-size:9px;color:#f6d68a">배우면 조건 없이 일반 칸에 장착 가능 · 효과는 작음</div>':n.t==='a'?'<div style="font-size:9px;color:#9fe08a">메뉴 → 스킬에서 4칸 중 하나에 장착</div>':''}
+ <div style="display:flex;gap:6px;margin-top:8px">${can&&!(P2&&!P2.aw&&autoOn(P2))?`<button class="btn ${on?'g':''}" id="tp_s">${on?'칸에서 빼기':'칸에 넣기'}</button>`:''}<button class="btn g" id="tp_c">닫기</button></div></div></div>`;
+ const c=()=>p.innerHTML='';$('tpx').onclick=c;$('tp_c').onclick=c;const b=$('tp_s');if(b)b.onclick=()=>{const k=$('trw').scrollTop;slotToggle(P2.id);treeWin();$('trw').scrollTop=k}}
+function menuWin(){sfx('Move1',.4);const M=[['캐릭터','k_punch',()=>charWin('eq')],['스탯','k_atkup',statWin],['가방','i_leather',bagWin],['퀘스트','k_talk',questWin],['스킬','k_cut',skillWin],['스킬 트리','k_defup',()=>treeWin()],['지도','k_harvest',mapWin],['획득 기록','i_coin',logWin],['자동 사냥','k_thunder',autoWin],['설정','i_scroll',setWin],['크레딧','i_potion',creditWin]];
+ win('메뉴',`<div class="grid">${M.map((m,i)=>`<div class="mi" data-m="${i}">${icon(m[1])}${m[0]}</div>`).join('')}</div>`);document.querySelectorAll('[data-m]').forEach(e=>e.onclick=()=>{sfx('Accept',.4);M[+e.dataset.m][2]()})}
+$('b_menu').onclick=menuWin;
+Object.assign(window.G,{treeWin,profNodes});
 </script></body></html>
