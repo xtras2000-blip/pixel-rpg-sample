@@ -16,3 +16,4 @@ Tiny Swords (Pixel Frog): Red Archer(Run, Shoot, Arrow), Red Lancer(Run, Right_A
 
 ## Phase 3 추가
 Tiny Swords (Pixel Frog): Blue Pawn Knife/Pickaxe, Blue Lancer, Blue Monk Run/Heal, Avatars 02/06/07/09. CodeManu effects 1,3,4,6,11,12,13,14,17,18,20. Ninja Adventure (CC0) Spell icons, Sickle, Sai, Ninjaku, Kunai, Stick, MagicWand, Book, TeaLeaf, Grass.
+- P4: Ninja Adventure 무기 아이콘 추가 사용 (Club, Lance, Bow, Hammer, Pickaxe) — CC0
