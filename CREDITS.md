@@ -6,3 +6,7 @@
   스킬 이펙트(회전베기, 화염, 낙뢰, 보호막 등). 동봉 README: 퍼블릭 도메인, 상업 가능, 크레딧 불필요 (스토어 페이지 표기는 CC-BY 4.0 → 크레딧 유지)
 - Ninja Adventure Asset Pack — Pixel-boy & AAA — CC0 1.0 — UI 아이콘, 효과음, 음악
 - Galmuri 폰트 — quiple — SIL OFL 1.1
+
+
+## Phase 1 추가 아이콘
+Ninja Adventure (CC0) Items/Resource, Weapons, Potion, Scroll, Treasure, Ui/Skill Icon (Helmet, Boot, Ring, Amulet, Guard) 아이콘. 대장장이 NPC: Tiny Swords Purple Pawn Interact Hammer, Avatars_08 (Pixel Frog).
